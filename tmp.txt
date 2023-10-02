@@ -1,0 +1,48 @@
+(swin) coulson@CoulsonStudio lib % python keygen.py my_private_key
+Private key: cQ2NqKDTgCNT65ghFL2C8gE4YBNo2bwTaJBMrMGfywsfuAFqHsnR
+Address: mgwYRr9eGegpZovrF9oJT3UxMmtXxCnQfY
+(swin) coulson@CoulsonStudio lib % python keygen.py alice_secret_key_BTC
+Private key: cSDr3aX6qfTtnZaJkpXrKXMrsVDKhLxEM9iqFru2PuXVfpQrvqPV
+Address: mpzbLWR39tccUhG5ajmd5PFDy9jtnb7cJA
+(swin) coulson@CoulsonStudio lib % python keygen.py bob_secret_key_BTC
+Private key: cS73RibmJsYUPKd3aw5Se98z8JyzETWYZytp11vN8yC4EL4ZAcjJ
+Address: mk4cHQkpqVTSUsCP4HzbZx8pX2Cwaseo4n
+
+(swin) coulson@CoulsonStudio lib % python keygen.py backup
+Private key: cVrRjqM1MGfc7rCma3VLF98h24pEzsspg1yMYUkNWcdLNqppLb9M
+Address: n1GuVU1iYdSXDgWxTzfN9BJDPNKR7XXcrq
+
+
+
+
+We sent 0.0159229 bitcoins to address
+mgwYRr9eGegpZovrF9oJT3UxMmtXxCnQfY
+tx: 6f03bca0e9fbd7f7afe2ce68e5a9ac34a20ef4937954b8dc902c32d5cee9790e
+Send coins back, when you don't need them anymore to the address
+mv4rnyY3Su5gjcDNzbMLKBQkBicCtHUtFB
+
+We sent 0.01393239 bitcoins to addressmpzbLWR39tccUhG5ajmd5PFDy9jtnb7cJA
+tx: 3ae14bc83836961a05f21514963f560cac602487b96412d92a201b2f731e48a6
+Send coins back, when you don't need them anymore to the address
+mv4rnyY3Su5gjcDNzbMLKBQkBicCtHUtFB
+
+
+(swin) coulson@CoulsonStudio lib % curl -X POST "https://api.blockcypher.com/v1/bcy/test/addrs?token=29e6377afd4642f591db438d2108d8e5"
+
+{ For alice
+  "private": "42b3a2bf1919ba82553d6ef642a2f9cce002f120172cba392a896e951872c9b8",
+  "public": "022d966d0484abab2035d65bf6b9c59c09b0cad4c55b1b940f6189bc5cbdbf0898",
+  "address": "Bu3SS2DQkpAJG7j7jQRc6g51ntTNdtj56N",
+  "wif": "BqZgyyiZ9pmoLm15ZiEekfcyEeF2VWcK5x2XxHTmfNGTCM3EGtog"
+}%    
+
+{ For Bob
+  "private": "2f547aca674ac798e903710e6e7c240a37cd3cdfcb5fe6deab443c6537c27dc1",
+  "public": "03e820b7cf30bd231743d889da77db7ee899533cc3e6a93c2d33e322ad24c550bc",
+  "address": "BvZC9fJ5KaPpdVJxL6WqK7cLf63ED9qg2R",
+  "wif": "Bpv2vzXHczTgMB2ZMz94mWedZNTHDjxYdraSTFFubHfczw7LEsPB"
+}%           
+
+{ tranfer bob 100000 amount
+  "tx_ref": "450317a73f4a8fb262e3b00c4e3c9087d25bcb93b8df0012dd62c80bd2b116bb"
+}%      

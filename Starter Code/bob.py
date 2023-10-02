@@ -3,7 +3,6 @@ from bitcoin.core.script import CScript, SignatureHash, SIGHASH_ALL
 from bitcoin.core.scripteval import VerifyScript, SCRIPT_VERIFY_P2SH
 
 from Q1 import P2PKH_scriptPubKey, P2PKH_scriptSig
-
 from Q4 import coinExchangeScript, coinExchangeScriptSig1, coinExchangeScriptSig2
 from lib.config import (alice_public_key_BTC, alice_address_BTC, 
     bob_secret_key_BTC, bob_public_key_BTC, bob_address_BTC, 
