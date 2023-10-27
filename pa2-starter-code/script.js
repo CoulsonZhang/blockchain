@@ -14,29 +14,6 @@ var abi = [
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "debtor",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "creditor",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "addDebt",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "creditor",
 				"type": "address"
 			},
@@ -134,6 +111,29 @@ var abi = [
 	{
 		"inputs": [
 			{
+				"internalType": "address",
+				"name": "payer",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "creditor",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "repay_IOU",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
@@ -156,7 +156,7 @@ var abi = [
 abiDecoder.addABI(abi);
 // call abiDecoder.decodeMethod to use this - see 'getAllFunctionCalls' for more
 
-var contractAddress = '0x6331d8836Ec086B7CC9b5b25B65E61DD180D47Fa'; // FIXME: fill this in with your contract's address/hash
+var contractAddress = '0x839c37E0C509b3E21A01CB6EB9cC7dF7F32CA804'; // FIXME: fill this in with your contract's address/hash
 var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // =============================================================================
@@ -170,8 +170,8 @@ var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 //   - a list of everyone who has ever sent or received an IOU
 // OR
 //   - a list of everyone currently owing or being owed money
-async function getUsers() {
-    return await BlockchainSplitwise.methods.getUsers().call();
+function getUsers() {
+    return BlockchainSplitwise.methods.getUsers().call();
 }
 
 // TODO: Get the total amount owed by the user specified by 'user'
@@ -198,16 +198,12 @@ async function getLastActive(user) {
     let allAddIOUCalls = await collectTransactions(contractAddress, "add_IOU");
 	// console.log(allAddIOUCalls);
     
-    // Convert user address to lowercase to ensure consistency in comparisons
     let lowerCaseUser = user.toLowerCase();
 
-    // Filter all calls where the user sent or received an IOU
     let userCalls = allAddIOUCalls.filter(call => call.from === lowerCaseUser || call.to === lowerCaseUser);
 
-    // If user has no activity, return null
     if(userCalls.length === 0) return null;
 
-    // Search for the most recent timestamp among the user's calls
     let latestTimestamp = userCalls[0].t;
     for(let i = 1; i < userCalls.length; i++) {
         if(userCalls[i].t > latestTimestamp) {
@@ -261,14 +257,57 @@ async function collectTransactions(addressOfContract, functionName) {
 
 async function add_IOU(creditor, amount) {
     try {
-        await BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: web3.eth.defaultAccount, gas:6721975});
-        // console.log("IOU added successfully!");
+        var path = await doBFS(creditor, web3.eth.defaultAccount, getNeighbors);
+        
+        // console.log('This is entrance');
+        // console.log(path);
+        
+        var min = (path !== null) ? parseInt(amount) : 0;
+        
+        if (path !== null) {
+            for (var i = 0; i < path.length - 1; i++) {
+                var curr = parseInt(await BlockchainSplitwise.methods.lookup(path[i], path[i + 1]).call());
+				console.log('current min:', min);
+                console.log('current curr:', curr);
+                if (curr < min) {
+                    min = curr;
+					console.log('This is a good point');
+                }
+            }
+
+            // console.log('check min:', min, ' amount:', amount);
+            
+            for(var i = 0; i < path.length - 1; i++) {
+                var debt = await BlockchainSplitwise.methods.lookup(path[i], path[i + 1]).call();
+                // console.log('debt between', path[i], 'and', path[i + 1], 'is:', debt);
+                await BlockchainSplitwise.methods.repay_IOU(path[i], path[i + 1], min).send({from: web3.eth.defaultAccount});
+            }
+        }
+        
+        // console.log('final min:', min, ' final amount:', amount);
+        await BlockchainSplitwise.methods.add_IOU(creditor, amount - min).send({from: web3.eth.defaultAccount, gas:6721975});
+        
     } catch (error) {
-        // console.error("Error adding IOU:", error.message);
         alert("Error adding IOU: " + error.message);
     }
 }
 
+async function getNeighbors(user) {
+    var neighbors = [];
+    var users = await getUsers(); // Use await here since getUsers is async
+
+    
+    for (var i = 0; i < users.length; i++) {
+        var debt = await BlockchainSplitwise.methods.lookup(user, users[i]).call();
+        console.log(debt);
+        
+        if(debt > 0) {
+            neighbors.push(users[i]);
+        }
+    }
+
+    return neighbors;	
+}
 
 
 // =============================================================================
