@@ -23,9 +23,9 @@ var abi = [
 				"type": "address"
 			},
 			{
-				"internalType": "int32",
+				"internalType": "uint256",
 				"name": "amount",
-				"type": "int32"
+				"type": "uint256"
 			}
 		],
 		"name": "addDebt",
@@ -41,9 +41,9 @@ var abi = [
 				"type": "address"
 			},
 			{
-				"internalType": "int32",
+				"internalType": "uint256",
 				"name": "amount",
-				"type": "int32"
+				"type": "uint256"
 			}
 		],
 		"name": "add_IOU",
@@ -67,9 +67,9 @@ var abi = [
 		"name": "debts",
 		"outputs": [
 			{
-				"internalType": "int32",
+				"internalType": "uint256",
 				"name": "",
-				"type": "int32"
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -81,8 +81,27 @@ var abi = [
 		"outputs": [
 			{
 				"internalType": "address[]",
-				"name": "ret",
+				"name": "",
 				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "isUser",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
@@ -104,9 +123,9 @@ var abi = [
 		"name": "lookup",
 		"outputs": [
 			{
-				"internalType": "int32",
-				"name": "ret",
-				"type": "int32"
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -137,7 +156,7 @@ var abi = [
 abiDecoder.addABI(abi);
 // call abiDecoder.decodeMethod to use this - see 'getAllFunctionCalls' for more
 
-var contractAddress = '0x3078685Dec92E3afd5FF164E27A92F8aF1796c78'; // FIXME: fill this in with your contract's address/hash
+var contractAddress = '0x6331d8836Ec086B7CC9b5b25B65E61DD180D47Fa'; // FIXME: fill this in with your contract's address/hash
 var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // =============================================================================
@@ -171,13 +190,13 @@ async function getTotalOwed(user) {
 }
 
 
-// TODO: Get the last time this user has sent or received an IOU, in seconds since Jan. 1, 1970
+// TODO: Get the last time this user hazs sent or received an IOU, in seconds since Jan. 1, 1970
 // Return null if you can't find any activity for the user.
 // HINT: Try looking at the way 'getAllFunctionCalls' is written. You can modify it if you'd like.
 async function getLastActive(user) {
 	
     let allAddIOUCalls = await collectTransactions(contractAddress, "add_IOU");
-	console.log(allAddIOUCalls);
+	// console.log(allAddIOUCalls);
     
     // Convert user address to lowercase to ensure consistency in comparisons
     let lowerCaseUser = user.toLowerCase();
@@ -236,9 +255,20 @@ async function collectTransactions(addressOfContract, functionName) {
 // TODO: add an IOU ('I owe you') to the system
 // The person you owe money is passed as 'creditor'
 // The amount you owe them is passed as 'amount'
+// async function add_IOU(creditor, amount) {
+//     await BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: web3.eth.defaultAccount});
+// }
+
 async function add_IOU(creditor, amount) {
-    await BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: web3.eth.defaultAccount});
+    try {
+        await BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: web3.eth.defaultAccount, gas:6721975});
+        // console.log("IOU added successfully!");
+    } catch (error) {
+        // console.error("Error adding IOU:", error.message);
+        alert("Error adding IOU: " + error.message);
+    }
 }
+
 
 
 // =============================================================================
