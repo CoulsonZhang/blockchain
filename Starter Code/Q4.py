@@ -15,17 +15,18 @@ from bitcoin.core.script import *
 def coinExchangeScript(public_key_sender, public_key_recipient, hash_of_secret):
     return [
         # fill this in!
-        OP_DUP, 
-        OP_HASH160, 
-        hash_of_secret, 
-        OP_EQUALVERIFY, 
-        OP_CHECKSIG, 
-        OP_IF, 
-        OP_ELSE, 
-        public_key_sender, 
-        OP_CHECKSIGVERIFY, 
-        public_key_recipient, 
-        OP_CHECKSIG, 
+        OP_IF,  
+            OP_HASH160,
+            hash_of_secret,
+            OP_EQUALVERIFY,
+            public_key_recipient,
+            OP_CHECKSIG,
+        OP_ELSE,
+            OP_2,
+            public_key_sender,
+            public_key_recipient,
+            OP_2,
+            OP_CHECKMULTISIG,
         OP_ENDIF
     ]
 
@@ -34,7 +35,8 @@ def coinExchangeScriptSig1(sig_recipient, secret):
     return [
         # fill this in!
         sig_recipient,
-        secret
+        secret,
+        OP_1
     ]
 
 # This is the ScriptSig for sending coins back to the sender if unredeemed
@@ -43,7 +45,8 @@ def coinExchangeScriptSig2(sig_sender, sig_recipient):
         # fill this in!
         OP_0,         
         sig_sender, 
-        sig_recipient 
+        sig_recipient,
+        OP_0
     ]
 ######################################################################
 
@@ -54,20 +57,20 @@ def coinExchangeScriptSig2(sig_sender, sig_recipient):
 # TODO: Fill in all of these fields
 #
 
-alice_txid_to_spend     = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-alice_utxo_index        = None
-alice_amount_to_send    = None
+alice_txid_to_spend     = "051b78206e1f16a0be1dcf014fd8a488e6e075c2c077b7118fefaf1e0fb476eb"
+alice_utxo_index        = 0
+alice_amount_to_send    = 0.001
 
-bob_txid_to_spend       = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-bob_utxo_index          = None
-bob_amount_to_send      = None
+bob_txid_to_spend       = "450317a73f4a8fb262e3b00c4e3c9087d25bcb93b8df0012dd62c80bd2b116bb"
+bob_utxo_index          = 0
+bob_amount_to_send      = 0.001
 
 # Get current block height (for locktime) in 'height' parameter for each blockchain (will be used in swap.py):
 #  curl https://api.blockcypher.com/v1/btc/test3
-btc_test3_chain_height  = 1579945
+btc_test3_chain_height  = 2511347
 
 #  curl https://api.blockcypher.com/v1/bcy/test
-bcy_test_chain_height   = 2548698
+bcy_test_chain_height   = 1005304
 
 # Parameter for how long Alice/Bob should have to wait before they can take back their coins
 # alice_locktime MUST be > bob_locktime
@@ -79,6 +82,6 @@ tx_fee = 0.0001
 # While testing your code, you can edit these variables to see if your
 # transaction can be broadcasted succesfully.
 broadcast_transactions = False
-alice_redeems = False
+alice_redeems = True
 
 ######################################################################

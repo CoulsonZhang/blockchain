@@ -156,7 +156,7 @@ var abi = [
 abiDecoder.addABI(abi);
 // call abiDecoder.decodeMethod to use this - see 'getAllFunctionCalls' for more
 
-var contractAddress = '0x839c37E0C509b3E21A01CB6EB9cC7dF7F32CA804'; // FIXME: fill this in with your contract's address/hash
+var contractAddress = '0xa9E9c733092Ba36a79476342F27e63b08EED1212'; // FIXME: fill this in with your contract's address/hash
 var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // =============================================================================
@@ -489,3 +489,4 @@ async function sanityCheck() {
 }
 
 //sanityCheck() //Uncomment this line to run the sanity check when you first open index.html
+sanityCheck() 

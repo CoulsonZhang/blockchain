@@ -12,3 +12,6 @@
 #
 
 
+The ScriptPubKey function "coinExchangeScript" I wrote in Q4.py is designed to be able to be redeemed by either supplying a signature from the recipient along with the secret number, implemented within "coinExchangeScriptSig1", or supplying both signatures from sender and recipient, implemented within "coinExchangeScriptSig2". From a big picture, this ScriptPubKey offers the fundamental functionality for atomic swap since it offers a way for the recipient to redeem the money once the secret is revealed or the sender to redeem the money if anything goes wrong in the following procedures. 
+If Bob doesn't redeem the money deposited by coinExchangeScript, Alice can always get her money back by executing the return transaction. Since Bob has already offered his signature under Alice's request at the beginning of the atomic swap, Alice can satisfy the second condition in "coinExchangeScript" by providing his signature to redeem the money. 
+This can be solved by a simple 1-of-2 multi-sig since both parties of atomic swap don't want the other to redeem the money on their own. Based on the pseudocode at https://en.bitcoin.it/wiki/Atomic_swap, for example, if B can redeem TX1 even before A redeems TX3 and reveals the secret X along with this, then A may lose the money deposited within TX1 and can't get the swapped money if B refuses to cooperate later. 
