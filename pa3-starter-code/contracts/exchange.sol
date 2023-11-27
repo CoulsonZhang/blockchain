@@ -16,8 +16,8 @@ import '../libraries/ownable.sol';
 contract TokenExchange is Ownable {
     address public admin;
 
-    address tokenAddr;                              // TODO: Paste token contract address here.
-    Token private token = Token(tokenAddr);         // TODO: Replace "Token" with your token class.             
+    address tokenAddr = 0x43a41f27169bF87cba5685001F9d296A5f864280;                              // TODO: Paste token contract address here.
+    Onedollar private token = Onedollar(tokenAddr);         // TODO: Replace "Token" with your token class.             
 
     // Liquidity pool for the exchange
     uint public token_reserves = 0;

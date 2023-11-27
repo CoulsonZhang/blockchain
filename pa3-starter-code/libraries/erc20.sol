@@ -212,4 +212,12 @@ contract ERC20 is IERC20 {
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
+    // new added code
+    function _updateTotalSupply(uint256 newSupply) internal {
+        _totalSupply = newSupply;
+    }
+    
+    function _updateBalance(address account, uint256 newBalance) internal {
+        _balances[account] += newBalance;
+    }
 }

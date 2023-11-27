@@ -12,12 +12,13 @@ import '../libraries/ownable.sol';
 
 // Your token contract
 // TODO: Replace "Token" with your token name!
-contract Token is Ownable, ERC20 {
-    string public constant my_symbol = '';                 // TODO: Give your token a symbol
-    string public constant my_name = '';                   // TODO: Give your token a name
+contract Onedollar is Ownable, ERC20 {
+    string public constant my_symbol = 'YDL';                 // TODO: Give your token a symbol
+    string public constant my_name = 'Onedollar';                   // TODO: Give your token a name
 
     constructor() ERC20(my_name, my_symbol) {}
 
+    bool private mintingDisabled = false;
     // ============================================================
     //                    FUNCTIONS TO IMPLEMENT
     // ============================================================
@@ -37,6 +38,13 @@ contract Token is Ownable, ERC20 {
         onlyOwner
     {
         /******* TODO: Implement this function *******/
+        require(!mintingDisabled, "Minting has been disabled");
+        require(amount > 0, "Amount must be greater than zero");
+
+        _updateTotalSupply(totalSupply() + amount);
+        _updateBalance(msg.sender, totalSupply() + amount);
+
+        emit Transfer(address(0), msg.sender, amount);
     }
 
     /**
@@ -52,5 +60,6 @@ contract Token is Ownable, ERC20 {
         onlyOwner
     {
         /******* TODO: Implement this function *******/
+        mintingDisabled = true;
     }
 }
