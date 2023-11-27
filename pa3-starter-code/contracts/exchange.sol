@@ -7,6 +7,7 @@ pragma solidity ^0.8.0;
 import "../interfaces/IERC20.sol";
 import './token.sol';
 import '../libraries/ownable.sol';
+import '../libraries/safemath.sol';
 
 /* This exchange is based off of Uniswap V1. The original whitepaper for the constant product rule
  * can be found here:
@@ -16,7 +17,7 @@ import '../libraries/ownable.sol';
 contract TokenExchange is Ownable {
     address public admin;
 
-    address tokenAddr = 0x43a41f27169bF87cba5685001F9d296A5f864280;                              // TODO: Paste token contract address here.
+    address tokenAddr = 0xA03b2a2934512B3fD09BB5bBB614a8227ff92fDB;                              // TODO: Paste token contract address here.
     Onedollar private token = Onedollar(tokenAddr);         // TODO: Replace "Token" with your token class.             
 
     // Liquidity pool for the exchange
@@ -74,6 +75,42 @@ contract TokenExchange is Ownable {
     // ============================================================
     //                    FUNCTIONS TO IMPLEMENT
     // ============================================================
+      function checkbalance() 
+        public 
+        view
+        returns (uint)
+    {
+        return token.balanceOf(msg.sender);
+    }
+
+      function checkETH() 
+        public 
+        payable 
+        returns (uint)
+    {
+        return msg.value;
+    }
+
+
+    //Determine the price per token in ETH based on the current exchange rate. Be sure to use the SafeMath library when performing all arithmetic operations.
+      function priceToken() 
+        public 
+        view
+        returns (uint)
+    {
+        require(token_reserves > 0, "No token reserves");
+        return SafeMath.div(eth_reserves, token_reserves);
+    }
+
+    //Determine the price per ETH in tokens based on the current exchange rate.
+      function priceETH() 
+        public 
+        view
+        returns (uint)
+    {
+        require(eth_reserves > 0, "No ETH reserves");
+        return SafeMath.div(token_reserves, eth_reserves);
+    }
     
     // Given an amount of tokens, calculates the corresponding amount of ETH 
     // based on the current exchange rate of the pool.
@@ -88,6 +125,8 @@ contract TokenExchange is Ownable {
         /* HINTS:
             Calculate how much ETH is of equivalent worth based on the current exchange rate.
         */
+        uint ethPrice = priceETH();
+        return SafeMath.div(amountToken, ethPrice);
     }
 
     // Given an amount of ETH, calculates the corresponding amount of tokens 
@@ -103,6 +142,8 @@ contract TokenExchange is Ownable {
         /* HINTS:
             Calculate how much of your token is of equivalent worth based on the current exchange rate.
         */
+        uint tokenPrice = priceToken();
+        return SafeMath.div(amountETH, tokenPrice);
     }
 
 
@@ -118,7 +159,7 @@ contract TokenExchange is Ownable {
      *
      * NOTE: You can change the inputs, or the scope of your function, as needed.
      */
-    function addLiquidity() 
+    function addLiquidity(uint maxExchangeRate, uint minExchangeRate) 
         external 
         payable
     {
@@ -129,6 +170,21 @@ contract TokenExchange is Ownable {
             Update token_reserves, eth_reserves, and k.
             Emit AddLiquidity event.
         */
+        uint amountETH = msg.value;
+        uint amountTokenRequired = SafeMath.div(SafeMath.mul(amountETH, token_reserves), eth_reserves);
+        uint currentExchangeRate = SafeMath.mul(100, SafeMath.div(eth_reserves, token_reserves));
+        require(currentExchangeRate <= maxExchangeRate && currentExchangeRate >= minExchangeRate, "Exchange rate out of bounds");
+
+
+        require(token.balanceOf(msg.sender) >= amountTokenRequired, "Insufficient token balance");
+        token.transferFrom(msg.sender, address(this), amountTokenRequired);
+
+        eth_reserves = SafeMath.add(eth_reserves, amountETH);
+        token_reserves = SafeMath.add(token_reserves, amountTokenRequired);
+        
+        k = SafeMath.mul(eth_reserves, token_reserves);
+
+        emit AddLiquidity(msg.sender, amountETH);
     }
 
 
@@ -142,7 +198,7 @@ contract TokenExchange is Ownable {
      *
      * NOTE: You can change the inputs, or the scope of your function, as needed.
      */
-    function removeLiquidity(uint amountETH)
+    function removeLiquidity(uint amountETH, uint maxExchangeRate, uint minExchangeRate)
         public 
         payable
     {
@@ -153,6 +209,24 @@ contract TokenExchange is Ownable {
             Update token_reserves, eth_reserves, and k.
             Emit RemoveLiquidity event.
         */
+        require(amountETH > 0, "Amount of ETH must be greater than zero");
+        require(amountETH <= eth_reserves, "Insufficient ETH in reserves");
+        uint currentExchangeRate = SafeMath.mul(100, SafeMath.div(eth_reserves, token_reserves));
+        require(currentExchangeRate <= maxExchangeRate && currentExchangeRate >= minExchangeRate, "Exchange rate out of bounds");
+
+        uint amountToken = SafeMath.div(SafeMath.mul(amountETH, token_reserves), eth_reserves);
+
+        require(token.balanceOf(address(this)) >= amountToken, "Insufficient token in reserves");
+
+        payable(msg.sender).transfer(amountETH);
+        token.transfer(msg.sender, amountToken);
+
+        eth_reserves = SafeMath.sub(eth_reserves, amountETH);
+        token_reserves = SafeMath.sub(token_reserves, amountToken);
+
+        k = SafeMath.mul(eth_reserves, token_reserves);
+
+        emit RemoveLiquidity(msg.sender, amountETH);
     }
 
     /**
@@ -163,7 +237,7 @@ contract TokenExchange is Ownable {
      *
      * NOTE: You can change the inputs, or the scope of your function, as needed.
      */
-    function removeAllLiquidity()
+    function removeAllLiquidity(uint maxExchangeRate, uint minExchangeRate)
         external
         payable
     {
@@ -172,11 +246,44 @@ contract TokenExchange is Ownable {
             Decide on the maximum allowable ETH that msg.sender can remove.
             Call removeLiquidity().
         */
+        uint userTokenBalance = token.balanceOf(msg.sender);
+        require(userTokenBalance > 0, "No tokens to withdraw");
+        uint currentExchangeRate = SafeMath.mul(100, SafeMath.div(eth_reserves, token_reserves));
+        require(currentExchangeRate <= maxExchangeRate && currentExchangeRate >= minExchangeRate, "Exchange rate out of bounds");
+
+        // Calculate the user's share of the pool
+        uint userShare = (userTokenBalance * 1e18) / token_reserves;
+        
+        // Calculate the amount of ETH and tokens to remove based on the user's share
+        uint userEthAmount = (eth_reserves * userShare) / 1e18;
+        uint userTokenAmount = (token_reserves * userShare) / 1e18;
+
+        // Ensure the amounts do not exceed the reserves
+        userEthAmount = userEthAmount > eth_reserves ? eth_reserves : userEthAmount;
+        userTokenAmount = userTokenAmount > userTokenBalance ? userTokenBalance : userTokenAmount;
+
+        // Remove liquidity
+        removeLiquidity(userEthAmount, userTokenAmount);
     }
 
     /***  Define helper functions for liquidity management here as needed: ***/
 
+    function removeLiquidity(uint amountETH, uint amountToken) private {
+        require(amountETH <= eth_reserves && amountToken <= token_reserves, "Insufficient liquidity in the pool");
 
+        // Transfer ETH and tokens to the user
+        payable(msg.sender).transfer(amountETH);
+        token.transfer(msg.sender, amountToken);
+
+        // Update the reserves
+        eth_reserves -= amountETH;
+        token_reserves -= amountToken;
+
+        // Recalculate k
+        k = eth_reserves * token_reserves;
+
+        emit RemoveLiquidity(msg.sender, amountETH);
+    }
 
     /* ========================= Swap Functions =========================  */ 
 
@@ -196,7 +303,7 @@ contract TokenExchange is Ownable {
      *
      * NOTE: You can change the inputs, or the scope of your function, as needed.
      */
-    function swapTokensForETH(uint amountTokens)
+    function swapTokensForETH(uint amountTokens, uint maxExchangeRate)
         external 
         payable
     {
@@ -217,7 +324,33 @@ contract TokenExchange is Ownable {
                     where % is sent to liquidity providers.
                 Keep track of the liquidity fees to be added.
         */
+        require(amountTokens > 0, "Amount of tokens must be greater than zero");
+        require(token.balanceOf(msg.sender) >= amountTokens, "Insufficient token balance");
+        uint currentExchangeRate = SafeMath.mul(100, SafeMath.div(eth_reserves, token_reserves));
 
+        require(currentExchangeRate <= maxExchangeRate, "Slippage exceeded");
+
+        // Calculate the new token reserves after adding amountTokens
+        uint newTokenReserves = SafeMath.add(token_reserves, amountTokens);
+        
+        // Calculate the new ETH reserves to maintain the constant product
+        uint newEthReserves = SafeMath.div(k, newTokenReserves);
+        uint amountETH = SafeMath.sub(eth_reserves, newEthReserves);
+
+        require(amountETH <= eth_reserves, "Insufficient ETH in reserves");
+
+        // Transfer tokens from the user to the contract
+        token.transferFrom(msg.sender, address(this), amountTokens);
+
+        // Transfer ETH from the contract to the user
+        payable(msg.sender).transfer(amountETH);
+
+        // Update the reserves
+        eth_reserves = newEthReserves;
+        token_reserves = newTokenReserves;
+
+
+        // k = SafeMath.mul(eth_reserves, token_reserves);
 
         /***************************/
         // DO NOT CHANGE BELOW THIS LINE
@@ -242,7 +375,7 @@ contract TokenExchange is Ownable {
      *
      * NOTE: You can change the inputs, or the scope of your function, as needed.
      */
-    function swapETHForTokens()
+    function swapETHForTokens(uint maxExchangeRate)
         external
         payable 
     {
@@ -262,7 +395,28 @@ contract TokenExchange is Ownable {
                     where % is sent to liquidity providers.
                 Keep track of the liquidity fees to be added.
         */
+        uint amountETH = msg.value;
+        require(amountETH > 0, "Amount of ETH must be greater than zero");
 
+        // Calculate the new ETH reserves after adding amountETH
+        uint newEthReserves = SafeMath.add(eth_reserves, amountETH);
+
+        // Calculate the new token reserves to maintain the constant product
+        uint newTokenReserves = SafeMath.div(k, newEthReserves);
+        uint amountTokens = SafeMath.sub(token_reserves, newTokenReserves);
+
+        require(amountTokens <= token.balanceOf(address(this)), "Insufficient token supply");
+        uint currentExchangeRate = SafeMath.mul(100, SafeMath.div(token_reserves, eth_reserves));
+        require(currentExchangeRate <= maxExchangeRate, "Slippage exceeded");
+
+        // Transfer the calculated amount of tokens to the user
+        token.transfer(msg.sender, amountTokens /* or amountTokensAfterFee if fee applied */);
+
+        // Update the reserves
+        eth_reserves = newEthReserves;
+        token_reserves = newTokenReserves;
+
+        // k = SafeMath.mul(eth_reserves, token_reserves);
 
         /**************************/
         // DO NOT CHANGE BELOW THIS LINE
